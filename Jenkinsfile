@@ -12,11 +12,11 @@ pipeline {
         stage('Setup Python Environment') {
             steps {
                 sh '''
+                    python3 --version
                     python3 -m venv venv
                     . venv/bin/activate
                     pip install --upgrade pip
                     pip install -r requirements.txt
-                    pip install pytest pytest-html pytest-cov
                 '''
             }
         }
@@ -34,24 +34,12 @@ pipeline {
             steps {
                 sh '''
                     . venv/bin/activate
-                    mkdir -p test-reports
-                    pytest test.py \
-                      --junitxml=test-reports/results.xml \
-                      --html=test-reports/report.html \
-                      --self-contained-html
+                    pytest --html=report.html --self-contained-html
                 '''
             }
             post {
                 always {
-                    junit 'test-reports/results.xml'
-                    publishHTML(target: [
-                        allowMissing: false,
-                        alwaysLinkToLastBuild: true,
-                        keepAll: true,
-                        reportDir: 'test-reports',
-                        reportFiles: 'report.html',
-                        reportName: 'Pytest HTML Report'
-                    ])
+                    archiveArtifacts artifacts: 'report.html', fingerprint: true
                 }
             }
         }
@@ -59,10 +47,10 @@ pipeline {
 
     post {
         success {
-            echo 'Python CI Pipeline completed successfully!'
+            echo '✅ Pipeline completed successfully!'
         }
         failure {
-            echo 'Pipeline failed.'
+            echo '❌ Pipeline failed.'
         }
     }
 }
