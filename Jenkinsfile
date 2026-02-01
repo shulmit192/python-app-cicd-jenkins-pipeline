@@ -1,5 +1,9 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'python:3.11'  // runs all stages inside a Python Docker container
+        }
+    }
 
     stages {
         stage('Checkout') {
@@ -11,8 +15,9 @@ pipeline {
 
         stage('Setup Python Environment') {
             steps {
+                echo 'Setting up Python virtual environment...'
                 sh '''
-                    python3 -m venv venv
+                    python -m venv venv
                     . venv/bin/activate
                     pip install --upgrade pip
                     pip install -r requirements.txt
@@ -23,15 +28,17 @@ pipeline {
 
         stage('Build / Compile Check') {
             steps {
+                echo 'Checking Python files for syntax errors...'
                 sh '''
                     . venv/bin/activate
-                    python3 -m py_compile app.py
+                    python -m py_compile app.py
                 '''
             }
         }
 
         stage('Unit Test') {
             steps {
+                echo 'Running unit tests with pytest...'
                 sh '''
                     . venv/bin/activate
                     mkdir -p test-reports
@@ -40,6 +47,7 @@ pipeline {
             }
             post {
                 always {
+                    echo 'Publishing test reports...'
                     junit 'test-reports/results.xml'
                     publishHTML(target: [
                         allowMissing: false,
@@ -63,3 +71,4 @@ pipeline {
         }
     }
 }
+
